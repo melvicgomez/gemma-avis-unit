@@ -11,15 +11,19 @@ import { Project } from 'src/projects/entities/project.entity';
 @Entity({ name: 't_project_users' })
 export class ProjectUser {
   @PrimaryGeneratedColumn('increment')
-  id: number; // Changed type from string to number
+  id: number;
 
-  @ManyToOne(() => User, (user) => user.user_id, { onDelete: 'CASCADE' })
+  @Column({ type: 'uuid' })
+  user_id: string;
+
+  @Column({ type: 'uuid' })
+  project_id: string;
+
+  @ManyToOne(() => User, (user) => user.user_id)
   @JoinColumn({ name: 'user_id' })
   users: User;
 
-  @ManyToOne(() => Project, (project) => project.project_id, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(() => Project, (project) => project.project_id)
   @JoinColumn({ name: 'project_id' })
   projects: Project;
 

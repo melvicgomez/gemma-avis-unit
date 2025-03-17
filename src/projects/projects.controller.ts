@@ -10,11 +10,13 @@ import {
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { IsScopeAllowed } from 'src/auth/auth.guard';
+import { UserScope } from 'src/models/app';
 
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
-
+  @IsScopeAllowed([UserScope.ADMIN])
   @Post()
   create(@Body() createProjectDto: CreateProjectDto) {
     return this.projectsService.create(createProjectDto);

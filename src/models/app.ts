@@ -1,6 +1,6 @@
-export enum UserScopes {
-  ADMIN,
-  TENANT,
+export enum UserScope {
+  ADMIN = 'ADMIN',
+  TENANT = 'TENANT',
 }
 
 export enum SocialLinkType {

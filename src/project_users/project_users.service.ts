@@ -1,28 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { CreateProjectUserDto } from './dto/create-project_user.dto';
-import { UpdateProjectUserDto } from './dto/update-project_user.dto';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ProjectUser } from './entities/project_user.entity';
 
 @Injectable()
 export class ProjectUsersService {
-  create(createProjectUserDto: CreateProjectUserDto) {
-    console.log(createProjectUserDto);
-    return 'This action adds a new projectUser';
-  }
+  constructor(
+    @InjectRepository(ProjectUser)
+    private projectUserRepository: Repository<ProjectUser>,
+  ) {}
 
-  findAll() {
-    return `This action returns all projectUsers`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} projectUser`;
-  }
-
-  update(id: number, updateProjectUserDto: UpdateProjectUserDto) {
-    console.log(updateProjectUserDto);
-    return `This action updates a #${id} projectUser`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} projectUser`;
+  async create(createProjectUserDto: CreateProjectUserDto) {
+    return await this.projectUserRepository.save(createProjectUserDto);
   }
 }

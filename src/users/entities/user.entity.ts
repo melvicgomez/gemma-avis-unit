@@ -1,5 +1,5 @@
 import { BookingReference } from 'src/booking_references/entities/booking_reference.entity';
-import { UserScopes } from 'src/models/app';
+import { UserScope } from 'src/models/app';
 import { ProjectUser } from 'src/project_users/entities/project_user.entity';
 
 import {
@@ -22,8 +22,8 @@ export class User {
   @Column({ type: 'varchar', length: 255 })
   email: string;
 
-  @Column({ type: 'simple-array', default: UserScopes.TENANT })
-  scopes: UserScopes[];
+  @Column({ type: 'varchar', default: UserScope.TENANT })
+  scope: UserScope;
 
   @Column({ type: 'text' })
   password: string;
@@ -35,11 +35,11 @@ export class User {
   updated_at: Date;
 
   @OneToMany(() => ProjectUser, (projectUser) => projectUser.users)
-  project_users: ProjectUser[];
+  project_users?: ProjectUser[];
 
   @OneToMany(
     () => BookingReference,
     (bookingReference) => bookingReference.booking_reference_id,
   )
-  user_booking_references: BookingReference[];
+  user_booking_references?: BookingReference[];
 }

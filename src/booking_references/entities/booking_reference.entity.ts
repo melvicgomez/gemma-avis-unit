@@ -63,5 +63,5 @@ export class BookingReference {
   @OneToMany(() => BookingDetail, (bookingDetail) => bookingDetail.id, {
     onDelete: 'CASCADE',
   })
-  booking_details: BookingDetail;
+  booking_details: BookingDetail[];
 }

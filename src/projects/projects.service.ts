@@ -1,28 +1,51 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Project } from './entities/project.entity';
+import { ProjectUser } from 'src/project_users/entities/project_user.entity';
 
 @Injectable()
 export class ProjectsService {
-  create(createProjectDto: CreateProjectDto) {
-    console.log(createProjectDto);
-    return 'This action adds a new project';
+  constructor(
+    @InjectRepository(Project)
+    private projectRepository: Repository<Project>,
+    @InjectRepository(ProjectUser)
+    private projectUserRepository: Repository<ProjectUser>,
+  ) {}
+
+  async create(createProjectDto: CreateProjectDto) {
+    const alreadyExists = await this.findOneBySlug(createProjectDto.slug);
+    if (!alreadyExists) {
+      const project = await this.projectRepository.save(createProjectDto);
+      return project;
+    } else {
+      throw new BadRequestException('Project already exists.');
+    }
   }
 
-  findAll() {
-    return `This action returns all projects`;
+  async findOneBySlug(slug: string) {
+    return this.projectRepository.findOneBy({ slug: slug });
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} project`;
-  }
+  async findOneById(id: string, includeActiveUsers?: boolean) {
+    if (includeActiveUsers) {
+      const projects = await this.projectRepository.findOne({
+        where: { project_id: id },
+        relations: ['project_users'],
+      });
 
-  update(id: string, updateProjectDto: UpdateProjectDto) {
-    console.log(updateProjectDto);
-    return `This action updates a #${id} project`;
-  }
+      if (projects) {
+        projects.project_users = projects.project_users.filter(
+          (user) => user.is_active,
+        );
+      }
 
-  remove(id: string) {
-    return `This action removes a #${id} project`;
+      return projects;
+    } else {
+      return this.projectRepository.findOneBy({
+        project_id: id,
+      });
+    }
   }
 }

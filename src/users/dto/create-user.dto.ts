@@ -1,11 +1,5 @@
-import {
-  IsEmail,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsArray,
-} from 'class-validator';
-import { UserScopes } from 'src/models/app';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { UserScope } from 'src/models/app';
 
 export class CreateUserDto {
   @IsNotEmpty()
@@ -16,9 +10,8 @@ export class CreateUserDto {
   @IsEmail()
   email: string;
 
-  @IsArray()
   @IsOptional() // Optional since it has a default value
-  scopes?: UserScopes[];
+  scope?: UserScope;
 
   @IsNotEmpty()
   @IsString()

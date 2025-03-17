@@ -1,7 +1,7 @@
 import { IsEmail, IsOptional, IsString, IsArray } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateUserDto } from './create-user.dto';
-import { UserScopes } from 'src/models/app';
+import { UserScope } from 'src/models/app';
 
 export class UpdateUserDto extends PartialType(CreateUserDto) {
   @IsOptional()
@@ -14,7 +14,7 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
 
   @IsOptional()
   @IsArray()
-  scopes?: UserScopes[];
+  scope?: UserScope;
 
   @IsOptional()
   @IsString()
