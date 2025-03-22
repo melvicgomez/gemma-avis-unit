@@ -18,6 +18,9 @@ export class BookingDetail {
   @Column({ type: 'decimal' })
   sales_price: number;
 
+  @Column({ type: 'uuid' })
+  booking_reference_id: string;
+
   @ManyToOne(
     () => BookingReference,
     (bookingReference) => bookingReference.booking_reference_id,

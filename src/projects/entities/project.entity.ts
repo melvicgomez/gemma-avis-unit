@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import { BookingReference } from 'src/booking_references/entities/booking_reference.entity';
 import { PricingDay, SocialLinkType } from 'src/models/app';
 import { ProjectUser } from 'src/project_users/entities/project_user.entity';
@@ -39,12 +40,13 @@ export class Project {
   @Column({ type: 'timestamptz' })
   expiration_date: Date;
 
+  @Exclude()
   @OneToMany(() => ProjectUser, (projectUser) => projectUser.projects)
   project_users: ProjectUser[];
 
   @OneToMany(
     () => BookingReference,
-    (bookingReference) => bookingReference.booking_reference_id,
+    (bookingReference) => bookingReference.project,
   )
-  project_booking_references: BookingReference[];
+  booking_references: BookingReference[];
 }

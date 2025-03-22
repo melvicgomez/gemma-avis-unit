@@ -11,7 +11,9 @@ describe('BookingReferencesController', () => {
       providers: [BookingReferencesService],
     }).compile();
 
-    controller = module.get<BookingReferencesController>(BookingReferencesController);
+    controller = module.get<BookingReferencesController>(
+      BookingReferencesController,
+    );
   });
 
   it('should be defined', () => {

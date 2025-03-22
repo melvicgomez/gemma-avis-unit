@@ -1,22 +1,21 @@
+import { Type } from 'class-transformer';
 import {
-  IsUUID,
+  IsArray,
+  ValidateNested,
   IsDate,
   IsNumber,
   IsOptional,
   IsString,
 } from 'class-validator';
+import { CreateBookingDetailDto } from 'src/booking_details/dto/create-booking_detail.dto';
 
 export class CreateBookingReferenceDto {
-  @IsUUID()
-  user_id: string;
-
-  @IsUUID()
-  project_id: string;
-
   @IsDate()
+  @Type(() => Date)
   check_in: Date;
 
   @IsDate()
+  @Type(() => Date)
   check_out: Date;
 
   @IsNumber()
@@ -43,4 +42,9 @@ export class CreateBookingReferenceDto {
   @IsOptional()
   @IsString()
   full_payment_bank_name?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateBookingDetailDto)
+  booking_details: CreateBookingDetailDto[];
 }

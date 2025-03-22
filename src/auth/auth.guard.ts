@@ -12,7 +12,10 @@ import { Reflector } from '@nestjs/core';
 import { UserScope } from 'src/models/app';
 
 export const IS_PUBLIC_KEY = 'isPublic';
-export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
+export const IsPublic = () => SetMetadata(IS_PUBLIC_KEY, true);
+
+export const IS_ADMIN_KEY = 'isAdmin';
+export const IsAdmin = () => SetMetadata(IS_ADMIN_KEY, true);
 
 export const SCOPE_PROTECTED = 'scopeProtected';
 export const IsScopeAllowed = (scopes: UserScope[]) =>
@@ -37,32 +40,47 @@ export class AuthGuard implements CanActivate {
     const request: Request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
     if (!token) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Token not found');
     }
+
     try {
       const payload = await this.jwtService.verifyAsync(token, {
         secret: process.env.JWT_SECRET,
       });
-      // 💡 We're assigning the payload to the request object here
-      // so that we can access it in our route handlers
-      request['user'] = payload;
 
-      // Check if the user's scope is allowed
+      request['user'] = payload;
+      const userScope: UserScope = payload.scope;
+
+      // Check if the route requires admin access
+      const isAdmin = this.reflector.getAllAndOverride<boolean>(IS_ADMIN_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]);
+
+      // If isAdmin is true, only allow ADMIN users
+      if (isAdmin && userScope !== UserScope.ADMIN) {
+        throw new UnauthorizedException('Admin access required');
+      }
+
+      // Proceed to scope-based permissions check
       const allowedScopes = this.reflector.get<UserScope[]>(
         SCOPE_PROTECTED,
         context.getHandler(),
       );
 
-      if (allowedScopes) {
-        const userScope: UserScope = payload.scope;
+      if (allowedScopes && allowedScopes.length > 0) {
         const isAllowed = allowedScopes.includes(userScope);
         if (!isAllowed) {
           throw new UnauthorizedException('Insufficient permissions');
         }
       }
-    } catch {
-      throw new UnauthorizedException();
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new UnauthorizedException('Token has expired');
+      }
+      throw new UnauthorizedException('Invalid token');
     }
+
     return true;
   }
 

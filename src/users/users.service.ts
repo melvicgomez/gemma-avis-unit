@@ -19,7 +19,8 @@ export class UsersService {
       parseInt(process.env.BCRYPT_ROUNDS || '10'),
     );
     createUserDto.password = hashedPassword;
-    const userCreated = await this.userRepository.save(createUserDto);
+    const newUser = this.userRepository.create(createUserDto);
+    const userCreated = await this.userRepository.save(newUser);
     return userCreated;
   }
 

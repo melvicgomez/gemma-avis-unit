@@ -3,42 +3,41 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
-  Delete,
+  Headers,
+  // UnauthorizedException,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
-import { IsScopeAllowed } from 'src/auth/auth.guard';
+import { IsPublic, IsAdmin, IsScopeAllowed } from 'src/auth/auth.guard';
+import { AuthService } from 'src/auth/auth.service';
 import { UserScope } from 'src/models/app';
 
 @Controller('projects')
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
-  @IsScopeAllowed([UserScope.ADMIN])
+  constructor(
+    private readonly projectsService: ProjectsService,
+    private readonly authService: AuthService,
+  ) {}
+
+  @IsScopeAllowed([UserScope.TENANT, UserScope.ADMIN])
+  @Get()
+  async getAllProjects(@Headers('authorization') authHeader?: string) {
+    const token = authHeader?.split(' ')[1];
+    const decodedToken = this.authService.parseToken(token || '');
+    return this.projectsService.findAllProjects(decodedToken.user_id);
+  }
+
+  @IsAdmin()
   @Post()
   create(@Body() createProjectDto: CreateProjectDto) {
     return this.projectsService.create(createProjectDto);
   }
+  // TODO: update project
 
-  @Get()
-  findAll() {
-    return this.projectsService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.projectsService.findOne(id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
-    return this.projectsService.update(id, updateProjectDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.projectsService.remove(id);
+  @IsPublic()
+  @Get(':project_id')
+  async findOne(@Param('project_id') project_id: string) {
+    return this.projectsService.findOneById(project_id);
   }
 }

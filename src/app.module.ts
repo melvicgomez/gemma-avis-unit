@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, ClassSerializerInterceptor } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EnvModule } from './modules/environment.module';
@@ -22,7 +22,7 @@ import { ProjectsService } from './projects/projects.service';
 import { UsersService } from './users/users.service';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth/auth.guard';
-
+import { APP_INTERCEPTOR } from '@nestjs/core';
 @Module({
   imports: [
     EnvModule,
@@ -47,6 +47,10 @@ import { AuthGuard } from './auth/auth.guard';
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ClassSerializerInterceptor,
     },
     AppService,
     UsersService,

@@ -13,8 +13,7 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { IsScopeAllowed, Public } from 'src/auth/auth.guard';
-import { UserScope } from 'src/models/app';
+import { IsPublic, IsAdmin } from 'src/auth/auth.guard';
 import { ProjectsService } from 'src/projects/projects.service';
 import { ProjectUsersService } from 'src/project_users/project_users.service';
 import { AuthService } from 'src/auth/auth.service';
@@ -28,8 +27,7 @@ export class UsersController {
     private readonly authService: AuthService,
   ) {}
 
-  @IsScopeAllowed([UserScope.ADMIN])
-  @Public()
+  @IsAdmin()
   @UsePipes(new ValidationPipe())
   @HttpCode(HttpStatus.CREATED)
   @Post('create-new-user')
@@ -44,7 +42,7 @@ export class UsersController {
     }
   }
 
-  @Public()
+  @IsPublic()
   @UsePipes(new ValidationPipe())
   @Post('register/:invite_code')
   @HttpCode(HttpStatus.CREATED)
@@ -79,7 +77,6 @@ export class UsersController {
     }
   }
 
-  @IsScopeAllowed([UserScope.TENANT, UserScope.ADMIN])
   @UsePipes(new ValidationPipe())
   @Put('link-project/:project_id')
   @HttpCode(HttpStatus.CREATED)
@@ -87,7 +84,7 @@ export class UsersController {
     @Param('project_id') invitationCode: string,
     @Headers('authorization') authHeader?: string, // ✅ Mark as optional to avoid TypeScript error
   ) {
-    const token = authHeader?.split(' ')[1]; // ✅ Extract the Bearer Token safely
+    const token = authHeader?.split(' ')[1];
     const decodedToken = this.authService.parseToken(token || '');
     const project = await this.projectService.findOneById(invitationCode, true);
     if (project) {

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CreateProjectUserDto } from './dto/create-project_user.dto';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,6 +12,25 @@ export class ProjectUsersService {
   ) {}
 
   async create(createProjectUserDto: CreateProjectUserDto) {
-    return await this.projectUserRepository.save(createProjectUserDto);
+    try {
+      const newBookingDetails =
+        this.projectUserRepository.create(createProjectUserDto);
+      return await this.projectUserRepository.save(newBookingDetails);
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Failed to create booking reference (${error})`,
+      );
+    }
+  }
+
+  async checkIfUserAllowedInProject(user_id: string, project_id: string) {
+    const activateUsers = await this.projectUserRepository.find({
+      where: {
+        project_id,
+        user_id,
+        is_active: true,
+      },
+    });
+    return activateUsers.length > 0;
   }
 }

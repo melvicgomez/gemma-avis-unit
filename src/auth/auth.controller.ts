@@ -7,14 +7,13 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SigninUserDto } from './dto/signin.dto';
-import { Public } from './auth.guard';
-// import { Public } from './auth.guard';
+import { IsPublic } from './auth.guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Public()
+  @IsPublic()
   @Post('login')
   @UsePipes(new ValidationPipe())
   async signIn(@Body() signinUserDto: SigninUserDto) {

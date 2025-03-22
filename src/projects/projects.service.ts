@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,8 +21,15 @@ export class ProjectsService {
   async create(createProjectDto: CreateProjectDto) {
     const alreadyExists = await this.findOneBySlug(createProjectDto.slug);
     if (!alreadyExists) {
-      const project = await this.projectRepository.save(createProjectDto);
-      return project;
+      try {
+        const newProject = this.projectRepository.create(createProjectDto);
+        const project = await this.projectRepository.save(newProject);
+        return project;
+      } catch (error) {
+        throw new InternalServerErrorException(
+          `Failed to create booking reference (${error})`,
+        );
+      }
     } else {
       throw new BadRequestException('Project already exists.');
     }
@@ -26,6 +37,20 @@ export class ProjectsService {
 
   async findOneBySlug(slug: string) {
     return this.projectRepository.findOneBy({ slug: slug });
+  }
+
+  async findAllProjects(userId: string) {
+    const projects = await this.projectRepository.find({
+      relations: ['project_users'],
+      where: {
+        project_users: {
+          user_id: userId,
+          is_active: true,
+        },
+      },
+    });
+
+    return projects;
   }
 
   async findOneById(id: string, includeActiveUsers?: boolean) {

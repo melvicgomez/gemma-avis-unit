@@ -17,10 +17,16 @@ export class BookingReference {
   @PrimaryGeneratedColumn('uuid')
   booking_reference_id: string;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'uuid', nullable: false })
+  user_id: string;
+
+  @Column({ type: 'uuid', nullable: false })
+  project_id: string;
+
+  @Column({ type: 'date', nullable: false })
   check_in: Date;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'date', nullable: false })
   check_out: Date;
 
   @Column({ type: 'decimal' })
@@ -50,18 +56,24 @@ export class BookingReference {
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
-  @ManyToOne(() => User, (user) => user.user_id, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.user_booking_references, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @ManyToOne(() => Project, (project) => project.project_id, {
+  @ManyToOne(() => Project, (project) => project.booking_references, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'project_id' })
-  project: User;
+  project: Project;
 
-  @OneToMany(() => BookingDetail, (bookingDetail) => bookingDetail.id, {
-    onDelete: 'CASCADE',
-  })
+  @OneToMany(
+    () => BookingDetail,
+    (bookingDetail) => bookingDetail.booking_reference,
+    {
+      cascade: true,
+    },
+  )
   booking_details: BookingDetail[];
 }
