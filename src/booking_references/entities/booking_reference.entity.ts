@@ -29,6 +29,9 @@ export class BookingReference {
   @Column({ type: 'date', nullable: false })
   check_out_date: Date;
 
+  @Column({ type: 'text', nullable: false })
+  description: string;
+
   @Column({ type: 'decimal' })
   gross_sale: number;
 

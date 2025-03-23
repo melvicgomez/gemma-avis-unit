@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsNotEmpty,
 } from 'class-validator';
 import { CreateBookingDetailDto } from 'src/booking_details/dto/create-booking_detail.dto';
 
@@ -17,6 +18,10 @@ export class CreateBookingReferenceDto {
   @IsDate()
   @Type(() => Date)
   check_out_date: Date;
+
+  @IsString()
+  @IsNotEmpty({ message: 'Description should not be empty' })
+  description: string;
 
   @IsNumber()
   gross_sale: number;

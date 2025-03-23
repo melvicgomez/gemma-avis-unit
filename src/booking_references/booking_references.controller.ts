@@ -11,6 +11,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Patch,
   Query,
   UnauthorizedException,
   UsePipes,
@@ -24,6 +25,7 @@ import { ProjectUsersService } from 'src/project_users/project_users.service';
 import { AuthService } from 'src/auth/auth.service';
 import { BookingDetailsService } from 'src/booking_details/booking_details.service';
 import { CreateBookingDetailDto } from 'src/booking_details/dto/create-booking_detail.dto';
+import { UpdateBookingReferenceDto } from './dto/update-booking_reference.dto';
 
 @Controller('booking-references')
 export class BookingReferencesController {
@@ -192,6 +194,97 @@ export class BookingReferencesController {
     } catch (error) {
       throw new InternalServerErrorException(
         `Failed to create booking reference (${error})`,
+      );
+    }
+  }
+
+  @Patch(':booking_ref_id/project/:project_id')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @HttpCode(HttpStatus.OK)
+  async updateProjectBookingRefById(
+    @Param('booking_ref_id', new ParseUUIDPipe()) bookingRefId: string,
+    @Param('project_id', new ParseUUIDPipe()) projectId: string,
+    @Body() updateBookingReferenceDto: UpdateBookingReferenceDto,
+    @Headers('authorization') authHeader?: string,
+  ) {
+    const token = authHeader?.split(' ')[1];
+    const decodedToken = this.authService.parseToken(token || '');
+
+    if (!decodedToken?.user_id) {
+      throw new UnauthorizedException('Invalid or missing user ID in token');
+    }
+
+    const isAllowed =
+      await this.projectUsersService.checkIfUserAllowedInProject(
+        decodedToken.user_id,
+        projectId,
+      );
+
+    if (!isAllowed) {
+      throw new MethodNotAllowedException(
+        'User is not allowed to modify this project',
+      );
+    }
+
+    const bookingRef =
+      await this.bookingReferencesService.getBookingReferenceById(bookingRefId);
+
+    if (!bookingRef) {
+      throw new BadRequestException('Booking reference ID not found');
+    }
+
+    // Update only the fields that exist in updateBookingReferenceDto
+    Object.assign(bookingRef, {
+      description:
+        updateBookingReferenceDto.description ?? bookingRef.description,
+      check_in_date:
+        updateBookingReferenceDto.check_in_date ?? bookingRef.check_in_date,
+      check_out_date:
+        updateBookingReferenceDto.check_out_date ?? bookingRef.check_out_date,
+      full_payment_reference_number:
+        updateBookingReferenceDto.full_payment_reference_number ??
+        bookingRef.full_payment_reference_number,
+      full_payment_price:
+        updateBookingReferenceDto.full_payment_price ??
+        bookingRef.full_payment_price,
+      full_payment_bank_name:
+        updateBookingReferenceDto.full_payment_bank_name ??
+        bookingRef.full_payment_bank_name,
+      initial_deposit_reference_number:
+        updateBookingReferenceDto.initial_deposit_reference_number ??
+        bookingRef.initial_deposit_reference_number,
+      initial_deposit_price:
+        updateBookingReferenceDto.initial_deposit_price ??
+        bookingRef.initial_deposit_price,
+      initial_deposit_bank_name:
+        updateBookingReferenceDto.initial_deposit_bank_name ??
+        bookingRef.initial_deposit_bank_name,
+      gross_sale: updateBookingReferenceDto.gross_sale ?? bookingRef.gross_sale,
+    });
+
+    // Validate check-in and check-out dates
+    if (bookingRef.check_in_date >= bookingRef.check_out_date) {
+      throw new BadRequestException(
+        'Invalid date range: check_in_date must be before check_out_date',
+      );
+    }
+
+    await this.bookingReferencesService.updateBookingReferenceById(bookingRef);
+
+    // Handle booking details update
+    if (updateBookingReferenceDto.booking_details) {
+      await this.bookingDetailService.deleteBookingDetailsByBookRefId(
+        bookingRef.booking_reference_id,
+      );
+
+      const bookingDetailsDto: CreateBookingDetailDto[] =
+        updateBookingReferenceDto.booking_details.map((bookingDetail) => ({
+          ...bookingDetail,
+          booking_reference_id: bookingRef.booking_reference_id,
+        }));
+
+      await this.bookingDetailService.createBookingDetailByBookingRef(
+        bookingDetailsDto,
       );
     }
   }

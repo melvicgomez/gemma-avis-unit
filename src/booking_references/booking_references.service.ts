@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { BookingReference } from './entities/booking_reference.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,6 +14,15 @@ export class BookingReferencesService {
     @InjectRepository(BookingReference)
     private bookingReferenceRepository: Repository<BookingReference>,
   ) {}
+
+  async getBookingReferenceById(bookingReferenceId: string) {
+    return this.bookingReferenceRepository.findOne({
+      where: {
+        booking_reference_id: bookingReferenceId,
+      },
+      relations: ['booking_details'],
+    });
+  }
 
   async getAllBookingReferences(
     projectId: string,
@@ -46,28 +59,48 @@ export class BookingReferencesService {
   async createBookingRef(
     userId: string,
     projectId: string,
-    bookingDetailDto: CreateBookingReferenceDto,
+    bookingRefDto: CreateBookingReferenceDto,
   ) {
     try {
       const newBookingRef = this.bookingReferenceRepository.create({
         user_id: userId,
+        description: bookingRefDto.description,
         project_id: projectId,
-        check_in_date: bookingDetailDto.check_in_date,
-        check_out_date: bookingDetailDto.check_out_date,
-        gross_sale: bookingDetailDto.gross_sale,
-        full_payment_bank_name: bookingDetailDto.full_payment_bank_name,
-        full_payment_price: bookingDetailDto.full_payment_price,
+        check_in_date: bookingRefDto.check_in_date,
+        check_out_date: bookingRefDto.check_out_date,
+        gross_sale: bookingRefDto.gross_sale,
+        full_payment_bank_name: bookingRefDto.full_payment_bank_name,
+        full_payment_price: bookingRefDto.full_payment_price,
         full_payment_reference_number:
-          bookingDetailDto.full_payment_reference_number,
-        initial_deposit_bank_name: bookingDetailDto.initial_deposit_bank_name, // Ensure names match
-        initial_deposit_price: bookingDetailDto.initial_deposit_price,
+          bookingRefDto.full_payment_reference_number,
+        initial_deposit_bank_name: bookingRefDto.initial_deposit_bank_name, // Ensure names match
+        initial_deposit_price: bookingRefDto.initial_deposit_price,
         initial_deposit_reference_number:
-          bookingDetailDto.initial_deposit_reference_number,
+          bookingRefDto.initial_deposit_reference_number,
       });
       return await this.bookingReferenceRepository.save(newBookingRef);
     } catch (error) {
       throw new InternalServerErrorException(
         `Failed to create booking reference (${error})`,
+      );
+    }
+  }
+
+  async updateBookingReferenceById(bookingRef: BookingReference) {
+    try {
+      const bookingReference =
+        await this.bookingReferenceRepository.preload(bookingRef);
+
+      if (!bookingReference) {
+        throw new NotFoundException(
+          `Booking reference with ID ${bookingRef.booking_reference_id} not found`,
+        );
+      }
+
+      return await this.bookingReferenceRepository.save(bookingReference);
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Failed to update booking reference: ${error.message}`,
       );
     }
   }

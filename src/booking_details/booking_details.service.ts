@@ -10,6 +10,7 @@ export class BookingDetailsService {
     @InjectRepository(BookingDetail)
     private bookingDetailRepository: Repository<BookingDetail>,
   ) {}
+
   async createBookingDetailByBookingRef(
     bookingDetailsDto: CreateBookingDetailDto[],
   ) {
@@ -21,8 +22,16 @@ export class BookingDetailsService {
       return await this.bookingDetailRepository.save(newBookingDetails);
     } catch (error) {
       throw new InternalServerErrorException(
-        `Failed to create booking reference (${error})`,
+        `Failed to create booking detail (${error})`,
       );
     }
+  }
+
+  async deleteBookingDetailsByBookRefId(bookingReferenceId: string) {
+    const deletedRecord = await this.bookingDetailRepository.delete({
+      booking_reference_id: bookingReferenceId,
+    });
+
+    return deletedRecord;
   }
 }
