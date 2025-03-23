@@ -42,5 +42,5 @@ export class UpdateProjectDto {
 
   @IsOptional()
   @IsDateString()
-  expiration_date?: string;
+  expiration_date?: Date;
 }
