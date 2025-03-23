@@ -68,11 +68,17 @@ export class BookingReferencesController {
       );
     }
 
-    // TODO: Query the database to return the project booking references
-    return Promise.resolve({ projectId, month: monthNumber, year: yearNumber });
+    const bookingReferences =
+      await this.bookingReferencesService.getAllBookingReferences(
+        projectId,
+        monthNumber,
+        yearNumber,
+      );
+
+    return bookingReferences;
   }
 
-  @IsScopeAllowed([UserScope.TENANT])
+  @IsScopeAllowed([UserScope.TENANT, UserScope.ADMIN])
   @Get(':project_id/tenant')
   async getTenantProjectBookingRef(
     @Param('project_id', new ParseUUIDPipe()) projectId: string,
@@ -106,6 +112,7 @@ export class BookingReferencesController {
 
     const token = authHeader?.split(' ')[1];
     const decodedToken = this.authService.parseToken(token || '');
+
     const isAllowed =
       await this.projectUsersService.checkIfUserAllowedInProject(
         decodedToken.user_id,
@@ -113,8 +120,14 @@ export class BookingReferencesController {
       );
 
     if (isAllowed) {
-      // TODO: Fetch and return filtered booking references by projectId, month, and year
-      return { projectId, month: monthNumber, year: yearNumber };
+      const bookingReferences =
+        await this.bookingReferencesService.getAllBookingReferences(
+          projectId,
+          monthNumber,
+          yearNumber,
+          false,
+        );
+      return bookingReferences;
     }
 
     throw new MethodNotAllowedException(
@@ -149,6 +162,14 @@ export class BookingReferencesController {
       );
     }
 
+    if (
+      createBookingReferenceDto.check_in_date >=
+      createBookingReferenceDto.check_out_date
+    ) {
+      throw new BadRequestException(
+        'Invalid date range: check_in_date must be before check_out_date',
+      );
+    }
     try {
       const bookRef = await this.bookingReferencesService.createBookingRef(
         decodedToken.user_id,

@@ -12,11 +12,11 @@ import { CreateBookingDetailDto } from 'src/booking_details/dto/create-booking_d
 export class CreateBookingReferenceDto {
   @IsDate()
   @Type(() => Date)
-  check_in: Date;
+  check_in_date: Date;
 
   @IsDate()
   @Type(() => Date)
-  check_out: Date;
+  check_out_date: Date;
 
   @IsNumber()
   gross_sale: number;

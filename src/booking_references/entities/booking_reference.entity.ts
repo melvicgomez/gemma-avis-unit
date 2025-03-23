@@ -24,10 +24,10 @@ export class BookingReference {
   project_id: string;
 
   @Column({ type: 'date', nullable: false })
-  check_in: Date;
+  check_in_date: Date;
 
   @Column({ type: 'date', nullable: false })
-  check_out: Date;
+  check_out_date: Date;
 
   @Column({ type: 'decimal' })
   gross_sale: number;

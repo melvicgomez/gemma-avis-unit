@@ -20,7 +20,7 @@ export class ProjectsController {
     private readonly authService: AuthService,
   ) {}
 
-  @IsScopeAllowed([UserScope.TENANT, UserScope.ADMIN])
+  @IsScopeAllowed([UserScope.TENANT])
   @Get()
   async getAllProjects(@Headers('authorization') authHeader?: string) {
     const token = authHeader?.split(' ')[1];

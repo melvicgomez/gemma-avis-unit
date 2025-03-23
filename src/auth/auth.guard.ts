@@ -69,7 +69,8 @@ export class AuthGuard implements CanActivate {
       );
 
       if (allowedScopes && allowedScopes.length > 0) {
-        const isAllowed = allowedScopes.includes(userScope);
+        const isAllowed =
+          allowedScopes.includes(userScope) || userScope === UserScope.ADMIN;
         if (!isAllowed) {
           throw new UnauthorizedException('Insufficient permissions');
         }

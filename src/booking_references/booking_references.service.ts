@@ -11,6 +11,38 @@ export class BookingReferencesService {
     private bookingReferenceRepository: Repository<BookingReference>,
   ) {}
 
+  async getAllBookingReferences(
+    projectId: string,
+    monthNumber: number,
+    yearNumber: number,
+    isMinified: boolean = true,
+  ) {
+    const startDate = new Date(yearNumber, monthNumber - 1, 1);
+    const endDate = new Date(yearNumber, monthNumber, 0, 23, 59, 59, 999);
+
+    const bookingRefs = this.bookingReferenceRepository
+      .createQueryBuilder('booking')
+      .leftJoinAndSelect('booking.booking_details', 'details')
+      .where('booking.project_id = :projectId', { projectId })
+      .andWhere('booking.check_in_date <= :endDate', { endDate })
+      .andWhere('booking.check_out_date >= :startDate', { startDate })
+      .andWhere('details.sales_date BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
+
+    if (isMinified) {
+      bookingRefs.select([
+        'booking.booking_reference_id',
+        'booking.check_in_date',
+        'booking.check_out_date',
+        'details.sales_date',
+      ]);
+    }
+
+    return await bookingRefs.getMany();
+  }
+
   async createBookingRef(
     userId: string,
     projectId: string,
@@ -20,8 +52,8 @@ export class BookingReferencesService {
       const newBookingRef = this.bookingReferenceRepository.create({
         user_id: userId,
         project_id: projectId,
-        check_in: bookingDetailDto.check_in,
-        check_out: bookingDetailDto.check_out,
+        check_in_date: bookingDetailDto.check_in_date,
+        check_out_date: bookingDetailDto.check_out_date,
         gross_sale: bookingDetailDto.gross_sale,
         full_payment_bank_name: bookingDetailDto.full_payment_bank_name,
         full_payment_price: bookingDetailDto.full_payment_price,
