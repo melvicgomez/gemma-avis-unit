@@ -13,7 +13,6 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto) {
-    // TODO: check if code used can add new user
     const hashedPassword = await bcrypt.hash(
       createUserDto.password,
       parseInt(process.env.BCRYPT_ROUNDS || '10'),

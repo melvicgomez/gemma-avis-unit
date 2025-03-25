@@ -34,10 +34,7 @@ export class BookingReferencesController {
     private readonly bookingDetailService: BookingDetailsService,
     private readonly projectUsersService: ProjectUsersService,
     private readonly authService: AuthService,
-  ) {
-    // TODO: endpoint to get the booking ref
-    // TODO: create booking ref
-  }
+  ) {}
 
   @IsPublic()
   @Get(':project_id')

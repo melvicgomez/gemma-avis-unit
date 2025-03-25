@@ -49,7 +49,6 @@ export class ProjectsService {
         `Failed to update booking reference: ${error.message}`,
       );
     }
-    return Promise.resolve(updateProjectDto);
   }
 
   async findOneBySlug(slug: string) {

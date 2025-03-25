@@ -13,7 +13,6 @@ import { UsersController } from './users/users.controller';
 import { AuthController } from './auth/auth.controller';
 import { ProjectsController } from './projects/projects.controller';
 import { BookingReferencesController } from './booking_references/booking_references.controller';
-import { BookingDetailsController } from './booking_details/booking_details.controller';
 import { ProjectUsersController } from './project_users/project_users.controller';
 import { BookingDetailsService } from './booking_details/booking_details.service';
 import { BookingReferencesService } from './booking_references/booking_references.service';
@@ -40,7 +39,6 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
     UsersController,
     ProjectsController,
     BookingReferencesController,
-    BookingDetailsController,
     ProjectUsersController,
   ],
   providers: [
