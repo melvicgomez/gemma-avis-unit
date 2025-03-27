@@ -4,7 +4,6 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 
 const config: TypeOrmModuleOptions = {
-  // logging: process.env.NODE_ENV === 'dev',
   type: (process.env.DATABASE_TYPE ||
     'postgres') as PostgresConnectionOptions['type'],
   host: process.env.DATABASE_HOST || 'localhost',
@@ -14,6 +13,7 @@ const config: TypeOrmModuleOptions = {
   database: process.env.DATABASE_NAME || 'db_name',
   // entities: [User],
   autoLoadEntities: true,
+  ssl: process.env.NODE_ENV === 'production',
   logging: process.env.NODE_ENV === 'dev',
   // synchronize: true,
   // migrationsRun: false,

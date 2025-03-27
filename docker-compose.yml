@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  app:
+    container_name: gemma-avis-unit-nest-app
+    image: gemma-avis-unit-app:latest
+    build: .
+    ports:
+      - '8000:8000'
+    env_file:
+      - .env.production

@@ -1,4 +1,4 @@
-import * as bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -23,20 +23,11 @@ export class UsersService {
     return userCreated;
   }
 
-  findAll() {
-    return `This action returns all users`;
-  }
-
-  findOne(user_id: string) {
-    return `This action returns a #${user_id} user`;
-  }
-
-  remove(user_id: string) {
-    return `This action removes a #${user_id} user`;
+  async findAll() {
+    return await this.userRepository.find();
   }
 
   async findUserByEmail(email: string): Promise<User | null> {
-    const user = await this.userRepository.findOneBy({ email: email });
-    return user;
+    return await this.userRepository.findOneBy({ email: email });
   }
 }

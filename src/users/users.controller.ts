@@ -10,6 +10,7 @@ import {
   Param,
   Headers,
   Put,
+  Get,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -28,11 +29,16 @@ export class UsersController {
   ) {}
 
   @IsAdmin()
+  @Get()
+  async getAllUsers() {
+    return this.usersService.findAll();
+  }
+
+  @IsAdmin()
   @UsePipes(new ValidationPipe())
   @HttpCode(HttpStatus.CREATED)
   @Post('create-new-user')
   async createNewUser(@Body() createUserDto: CreateUserDto) {
-    // validate if user used a valid invitation code
     const user = await this.usersService.findUserByEmail(createUserDto.email);
     if (user === null) {
       await this.usersService.create(createUserDto);
