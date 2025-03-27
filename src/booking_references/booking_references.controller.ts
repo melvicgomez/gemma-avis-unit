@@ -26,6 +26,7 @@ import { AuthService } from 'src/auth/auth.service';
 import { BookingDetailsService } from 'src/booking_details/booking_details.service';
 import { CreateBookingDetailDto } from 'src/booking_details/dto/create-booking_detail.dto';
 import { UpdateBookingReferenceDto } from './dto/update-booking_reference.dto';
+import { ProjectsService } from 'src/projects/projects.service';
 
 @Controller('booking-references')
 export class BookingReferencesController {
@@ -33,6 +34,7 @@ export class BookingReferencesController {
     private readonly bookingReferencesService: BookingReferencesService,
     private readonly bookingDetailService: BookingDetailsService,
     private readonly projectUsersService: ProjectUsersService,
+    private readonly projectsService: ProjectsService,
     private readonly authService: AuthService,
   ) {}
 
@@ -66,15 +68,28 @@ export class BookingReferencesController {
         'Month must be between 1-12 and year must be valid',
       );
     }
+    const projectObj = await this.projectsService.findOneById(projectId, true);
 
-    const bookingReferences =
-      await this.bookingReferencesService.getAllBookingReferences(
-        projectId,
-        monthNumber,
-        yearNumber,
-      );
+    if (projectObj) {
+      const expirationDate = new Date(projectObj.expiration_date);
+      const currentDate = new Date();
+      if (currentDate > expirationDate) {
+        throw new MethodNotAllowedException(
+          'User is not allowed to modify this project because the project is already expired',
+        );
+      }
 
-    return bookingReferences;
+      const bookingReferences =
+        await this.bookingReferencesService.getAllBookingReferences(
+          projectId,
+          monthNumber,
+          yearNumber,
+        );
+
+      return bookingReferences;
+    } else {
+      throw new BadRequestException('Project not found');
+    }
   }
 
   @IsScopeAllowed([UserScope.TENANT, UserScope.ADMIN])
@@ -112,26 +127,40 @@ export class BookingReferencesController {
     const token = authHeader?.split(' ')[1];
     const decodedToken = this.authService.parseToken(token || '');
 
-    const isAllowed =
-      await this.projectUsersService.checkIfUserAllowedInProject(
-        decodedToken.user_id,
-        projectId,
-      );
+    const projectObj = await this.projectsService.findOneById(projectId, true);
 
-    if (isAllowed) {
-      const bookingReferences =
-        await this.bookingReferencesService.getAllBookingReferences(
-          projectId,
-          monthNumber,
-          yearNumber,
-          false,
+    if (projectObj) {
+      const expirationDate = new Date(projectObj.expiration_date);
+      const currentDate = new Date();
+      if (currentDate > expirationDate) {
+        throw new MethodNotAllowedException(
+          'User is not allowed to modify this project because the project is already expired',
         );
-      return bookingReferences;
-    }
+      }
 
-    throw new MethodNotAllowedException(
-      'User is not allowed to modify this project',
-    );
+      const isAllowed =
+        await this.projectUsersService.checkIfUserAllowedInProject(
+          decodedToken.user_id,
+          projectId,
+        );
+
+      if (isAllowed) {
+        const bookingReferences =
+          await this.bookingReferencesService.getAllBookingReferences(
+            projectId,
+            monthNumber,
+            yearNumber,
+            false,
+          );
+        return bookingReferences;
+      }
+
+      throw new MethodNotAllowedException(
+        'User is not allowed to modify this project',
+      );
+    } else {
+      throw new BadRequestException('Project not found');
+    }
   }
 
   @Post(':project_id')
@@ -149,49 +178,62 @@ export class BookingReferencesController {
       throw new UnauthorizedException('Invalid or missing user ID in token');
     }
 
-    const isAllowed =
-      await this.projectUsersService.checkIfUserAllowedInProject(
-        decodedToken.user_id,
-        projectId,
-      );
-
-    if (!isAllowed) {
-      throw new MethodNotAllowedException(
-        'User is not allowed to modify this project',
-      );
-    }
-
-    if (
-      createBookingReferenceDto.check_in_date >=
-      createBookingReferenceDto.check_out_date
-    ) {
-      throw new BadRequestException(
-        'Invalid date range: check_in_date must be before check_out_date',
-      );
-    }
-    try {
-      const bookRef = await this.bookingReferencesService.createBookingRef(
-        decodedToken.user_id,
-        projectId,
-        createBookingReferenceDto,
-      );
-
-      if (bookRef.booking_reference_id) {
-        const bookingDetailsDto: CreateBookingDetailDto[] =
-          createBookingReferenceDto.booking_details.map((bookingDetail) => ({
-            ...bookingDetail,
-            booking_reference_id: bookRef.booking_reference_id,
-          }));
-
-        await this.bookingDetailService.createBookingDetailByBookingRef(
-          bookingDetailsDto,
+    const projectObj = await this.projectsService.findOneById(projectId, true);
+    if (projectObj) {
+      const expirationDate = new Date(projectObj.expiration_date);
+      const currentDate = new Date();
+      if (currentDate > expirationDate) {
+        throw new MethodNotAllowedException(
+          'User is not allowed to modify this project because the project is already expired',
         );
       }
-      return null;
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Failed to create booking reference (${error})`,
-      );
+
+      const isAllowed =
+        await this.projectUsersService.checkIfUserAllowedInProject(
+          decodedToken.user_id,
+          projectId,
+        );
+
+      if (!isAllowed) {
+        throw new MethodNotAllowedException(
+          'User is not allowed to modify this project',
+        );
+      }
+
+      if (
+        createBookingReferenceDto.check_in_date >=
+        createBookingReferenceDto.check_out_date
+      ) {
+        throw new BadRequestException(
+          'Invalid date range: check_in_date must be before check_out_date',
+        );
+      }
+      try {
+        const bookRef = await this.bookingReferencesService.createBookingRef(
+          decodedToken.user_id,
+          projectId,
+          createBookingReferenceDto,
+        );
+
+        if (bookRef.booking_reference_id) {
+          const bookingDetailsDto: CreateBookingDetailDto[] =
+            createBookingReferenceDto.booking_details.map((bookingDetail) => ({
+              ...bookingDetail,
+              booking_reference_id: bookRef.booking_reference_id,
+            }));
+
+          await this.bookingDetailService.createBookingDetailByBookingRef(
+            bookingDetailsDto,
+          );
+        }
+        return null;
+      } catch (error) {
+        throw new InternalServerErrorException(
+          `Failed to create booking reference (${error})`,
+        );
+      }
+    } else {
+      throw new BadRequestException('Project not found');
     }
   }
 
@@ -211,78 +253,96 @@ export class BookingReferencesController {
       throw new UnauthorizedException('Invalid or missing user ID in token');
     }
 
-    const isAllowed =
-      await this.projectUsersService.checkIfUserAllowedInProject(
-        decodedToken.user_id,
-        projectId,
+    const projectObj = await this.projectsService.findOneById(projectId, true);
+    if (projectObj) {
+      const expirationDate = new Date(projectObj.expiration_date);
+      const currentDate = new Date();
+      if (currentDate > expirationDate) {
+        throw new MethodNotAllowedException(
+          'User is not allowed to modify this project because the project is already expired',
+        );
+      }
+
+      const isAllowed =
+        await this.projectUsersService.checkIfUserAllowedInProject(
+          decodedToken.user_id,
+          projectId,
+        );
+
+      if (!isAllowed) {
+        throw new MethodNotAllowedException(
+          'User is not allowed to modify this project',
+        );
+      }
+
+      const bookingRef =
+        await this.bookingReferencesService.getBookingReferenceById(
+          bookingRefId,
+        );
+
+      if (!bookingRef) {
+        throw new BadRequestException('Booking reference ID not found');
+      }
+
+      // Update only the fields that exist in updateBookingReferenceDto
+      Object.assign(bookingRef, {
+        description:
+          updateBookingReferenceDto.description ?? bookingRef.description,
+        check_in_date:
+          updateBookingReferenceDto.check_in_date ?? bookingRef.check_in_date,
+        check_out_date:
+          updateBookingReferenceDto.check_out_date ?? bookingRef.check_out_date,
+        full_payment_reference_number:
+          updateBookingReferenceDto.full_payment_reference_number ??
+          bookingRef.full_payment_reference_number,
+        full_payment_price:
+          updateBookingReferenceDto.full_payment_price ??
+          bookingRef.full_payment_price,
+        full_payment_bank_name:
+          updateBookingReferenceDto.full_payment_bank_name ??
+          bookingRef.full_payment_bank_name,
+        initial_deposit_reference_number:
+          updateBookingReferenceDto.initial_deposit_reference_number ??
+          bookingRef.initial_deposit_reference_number,
+        initial_deposit_price:
+          updateBookingReferenceDto.initial_deposit_price ??
+          bookingRef.initial_deposit_price,
+        initial_deposit_bank_name:
+          updateBookingReferenceDto.initial_deposit_bank_name ??
+          bookingRef.initial_deposit_bank_name,
+        gross_sale:
+          updateBookingReferenceDto.gross_sale ?? bookingRef.gross_sale,
+      });
+
+      // Validate check-in and check-out dates
+      if (bookingRef.check_in_date >= bookingRef.check_out_date) {
+        throw new BadRequestException(
+          'Invalid date range: check_in_date must be before check_out_date',
+        );
+      }
+
+      await this.bookingReferencesService.updateBookingReferenceById(
+        bookingRef,
       );
 
-    if (!isAllowed) {
-      throw new MethodNotAllowedException(
-        'User is not allowed to modify this project',
-      );
-    }
+      // Handle booking details update
+      if (updateBookingReferenceDto.booking_details) {
+        await this.bookingDetailService.deleteBookingDetailsByBookRefId(
+          bookingRef.booking_reference_id,
+        );
 
-    const bookingRef =
-      await this.bookingReferencesService.getBookingReferenceById(bookingRefId);
+        const bookingDetailsDto: CreateBookingDetailDto[] =
+          updateBookingReferenceDto.booking_details.map((bookingDetail) => ({
+            ...bookingDetail,
+            booking_reference_id: bookingRef.booking_reference_id,
+          }));
 
-    if (!bookingRef) {
-      throw new BadRequestException('Booking reference ID not found');
-    }
-
-    // Update only the fields that exist in updateBookingReferenceDto
-    Object.assign(bookingRef, {
-      description:
-        updateBookingReferenceDto.description ?? bookingRef.description,
-      check_in_date:
-        updateBookingReferenceDto.check_in_date ?? bookingRef.check_in_date,
-      check_out_date:
-        updateBookingReferenceDto.check_out_date ?? bookingRef.check_out_date,
-      full_payment_reference_number:
-        updateBookingReferenceDto.full_payment_reference_number ??
-        bookingRef.full_payment_reference_number,
-      full_payment_price:
-        updateBookingReferenceDto.full_payment_price ??
-        bookingRef.full_payment_price,
-      full_payment_bank_name:
-        updateBookingReferenceDto.full_payment_bank_name ??
-        bookingRef.full_payment_bank_name,
-      initial_deposit_reference_number:
-        updateBookingReferenceDto.initial_deposit_reference_number ??
-        bookingRef.initial_deposit_reference_number,
-      initial_deposit_price:
-        updateBookingReferenceDto.initial_deposit_price ??
-        bookingRef.initial_deposit_price,
-      initial_deposit_bank_name:
-        updateBookingReferenceDto.initial_deposit_bank_name ??
-        bookingRef.initial_deposit_bank_name,
-      gross_sale: updateBookingReferenceDto.gross_sale ?? bookingRef.gross_sale,
-    });
-
-    // Validate check-in and check-out dates
-    if (bookingRef.check_in_date >= bookingRef.check_out_date) {
-      throw new BadRequestException(
-        'Invalid date range: check_in_date must be before check_out_date',
-      );
-    }
-
-    await this.bookingReferencesService.updateBookingReferenceById(bookingRef);
-
-    // Handle booking details update
-    if (updateBookingReferenceDto.booking_details) {
-      await this.bookingDetailService.deleteBookingDetailsByBookRefId(
-        bookingRef.booking_reference_id,
-      );
-
-      const bookingDetailsDto: CreateBookingDetailDto[] =
-        updateBookingReferenceDto.booking_details.map((bookingDetail) => ({
-          ...bookingDetail,
-          booking_reference_id: bookingRef.booking_reference_id,
-        }));
-
-      await this.bookingDetailService.createBookingDetailByBookingRef(
-        bookingDetailsDto,
-      );
+        await this.bookingDetailService.createBookingDetailByBookingRef(
+          bookingDetailsDto,
+        );
+      }
+    } else {
+      throw new BadRequestException('Project not found');
     }
   }
 }

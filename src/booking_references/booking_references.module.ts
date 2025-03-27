@@ -33,6 +33,7 @@ import { BookingDetailsService } from 'src/booking_details/booking_details.servi
     UsersService,
     JwtService,
     BookingDetailsService,
+    ProjectsService,
   ],
   exports: [BookingReferencesService, TypeOrmModule],
 })

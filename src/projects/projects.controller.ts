@@ -46,12 +46,19 @@ export class ProjectsController {
   @IsScopeAllowed([UserScope.TENANT])
   @Patch(':project_id')
   async update(
-    @Param('project_id') project_id: string,
+    @Param('project_id') projectId: string,
     @Body() updateProjectDto: UpdateProjectDto,
     @Headers('authorization') authHeader?: string,
   ) {
-    const projectObj = await this.projectsService.findOneById(project_id, true);
+    const projectObj = await this.projectsService.findOneById(projectId, true);
     if (projectObj) {
+      const expirationDate = new Date(projectObj.expiration_date);
+      const currentDate = new Date();
+      if (currentDate > expirationDate) {
+        throw new MethodNotAllowedException(
+          'User is not allowed to modify this project because the project is already expired',
+        );
+      }
       const token = authHeader?.split(' ')[1];
       const decodedToken = this.authService.parseToken(token || '');
       const userIsAllowed = projectObj.project_users.find(
@@ -69,9 +76,7 @@ export class ProjectsController {
         );
       }
     } else {
-      throw new BadRequestException(
-        'Month must be between 1-12 and year must be valid',
-      );
+      throw new BadRequestException('Project not found');
     }
   }
 }
