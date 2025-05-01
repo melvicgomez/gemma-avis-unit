@@ -1,10 +1,14 @@
 version: '3.8'
 services:
   app:
-    container_name: gemma-avis-unit-nest-app
+    container_name: gemma-avis-unit-dev-app
     image: gemma-avis-unit-app:latest
     build: .
     ports:
-      - '8000:8000'
+      - '3000:3000'
     env_file:
-      - .env.production
+      - .env
+    environment:
+      - DATABASE_HOST=host.docker.internal
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
